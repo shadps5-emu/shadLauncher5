@@ -3,6 +3,12 @@
 
 #include "uds.h"
 
+#include <charconv>
+#include <cstdint>
+#include <limits>
+#include <optional>
+#include <system_error>
+
 #include <nlohmann/json.hpp>
 
 #include "core/file_format/ucp.h"
@@ -46,6 +52,21 @@ const json& Array(const json& j, const char* key) {
     }
     const auto it = j.find(key);
     return it != j.end() && it->is_array() ? *it : kEmpty;
+}
+
+std::optional<u64> Unsigned(std::string_view text) {
+    u64 number = 0;
+    const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), number);
+    return error == std::errc{} && end == text.data() + text.size() && !text.empty()
+               ? std::optional<u64>(number)
+               : std::nullopt;
+}
+
+bool IsPropertyName(std::string_view input) {
+    return input.size() > 2 && input.starts_with("$.") &&
+           input.find_first_not_of(
+               "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_", 2) ==
+               std::string_view::npos;
 }
 
 bool ParseJson(std::string_view text, json& out) {
@@ -122,6 +143,9 @@ bool UdsDefinitions::ParseStats(std::string_view json_text) {
         if (const auto it = s.find("enumDefinition"); it != s.end()) {
             st.enum_source_id = Str(*it, "sourceId");
         }
+        st.initial_value = Str(s, "initialValue");
+        st.min_value = Str(s, "minValue");
+        st.max_value = Str(s, "maxValue");
         stats.push_back(std::move(st));
     }
     return true;
@@ -143,6 +167,7 @@ bool UdsDefinitions::ParseRules(std::string_view json_text) {
         rule.group = Str(r, "definitionGroup");
         if (const auto c = r.find("condition"); c != r.end() && c->is_object()) {
             rule.event = Str(*c, "eventName");
+            rule.filtered = c->size() != 1 || !c->contains("eventName");
             if (const auto p = c->find("property"); p != c->end() && p->is_object()) {
                 rule.condition =
                     Str(*p, "path") + " " + Str(*p, "comparator") + " " + Str(*p, "value");
@@ -185,4 +210,50 @@ bool UdsDefinitions::LoadFromUcp(const UCP& ucp) {
         }
     }
     return any;
+}
+
+const UdsStat* UdsDefinitions::FindStat(s64 id) const {
+    for (const auto& stat : stats) {
+        if (stat.id == id) {
+            return &stat;
+        }
+    }
+    return nullptr;
+}
+
+UdsRuleSupport UdsDefinitions::CheckEmulatorSupport(const UdsRule& rule) const {
+    if (rule.filtered || rule.event.empty()) {
+        return UdsRuleSupport::Condition;
+    }
+    if (!IsPropertyName(rule.input)) {
+        return UdsRuleSupport::Input;
+    }
+    const UdsStat* stat = FindStat(rule.output_stat_id);
+    if (stat == nullptr || rule.output_stat_id < 0) {
+        return UdsRuleSupport::NoStat;
+    }
+    if (stat->aggregation != "latest" && stat->aggregation != "max") {
+        return UdsRuleSupport::Aggregation;
+    }
+    const auto& type = stat->data_type;
+    if (type != "uint32" && type != "uint64" && type != "int64") {
+        return UdsRuleSupport::DataType;
+    }
+    if (type == "int64" && (stat->aggregation != "max" || stat->min_value.empty())) {
+        return UdsRuleSupport::Int64Latest;
+    }
+    const u64 limit = type == "uint32"  ? std::numeric_limits<u32>::max()
+                      : type == "int64" ? static_cast<u64>(std::numeric_limits<s64>::max())
+                                        : std::numeric_limits<u64>::max();
+    if ((!stat->min_value.empty() && Unsigned(stat->min_value) != u64{0}) ||
+        (!stat->max_value.empty() && Unsigned(stat->max_value) != limit)) {
+        return UdsRuleSupport::Range;
+    }
+    if (!stat->initial_value.empty()) {
+        const auto initial = Unsigned(stat->initial_value);
+        if (!initial || *initial > limit) {
+            return UdsRuleSupport::InitialValue;
+        }
+    }
+    return UdsRuleSupport::Used;
 }

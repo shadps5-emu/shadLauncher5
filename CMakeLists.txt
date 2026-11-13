@@ -326,6 +326,10 @@ set(QT_UI src/qt_ui/settings.cpp
           src/qt_ui/log_presets_dialog.h
           src/qt_ui/trophy_viewer.cpp
           src/qt_ui/trophy_viewer.h
+          src/qt_ui/uds_tree.cpp
+          src/qt_ui/uds_tree.h
+          src/qt_ui/uds_viewer.cpp
+          src/qt_ui/uds_viewer.h
           src/qt_ui/zarchive_viewer_dialog.cpp
           src/qt_ui/zarchive_viewer_dialog.h
           src/qt_ui/elf_info_dialog.cpp

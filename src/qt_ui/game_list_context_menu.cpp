@@ -56,6 +56,7 @@
 #include "settings_dialog.h"
 #include "tech_info_dialog.h"
 #include "trophy_viewer.h"
+#include "uds_viewer.h"
 #include "zarchive_viewer_dialog.h"
 
 namespace {
@@ -1092,6 +1093,16 @@ void GameListContextMenu::Show(const game_info& gameinfo, const QPoint& global_p
         TrophyViewer* trophyViewer = new TrophyViewer(frame->m_gui_settings, trophyPath,
                                                       gameUcpPath, gameName, allTrophyGames);
         trophyViewer->show();
+    });
+
+    QAction* uds_viewer = addAction(tr("&UDS Viewer"));
+    uds_viewer->setEnabled(UdsViewer::HasUds(std::filesystem::path(current_game.path),
+                                             std::filesystem::path(current_game.update_path)));
+    connect(uds_viewer, &QAction::triggered, frame, [frame, current_game] {
+        auto* viewer = new UdsViewer(QString::fromStdString(current_game.name),
+                                     std::filesystem::path(current_game.path),
+                                     std::filesystem::path(current_game.update_path), frame);
+        viewer->show();
     });
 
     /* TODO

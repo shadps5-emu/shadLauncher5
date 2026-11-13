@@ -50,6 +50,7 @@
 #include "core/file_format/uds.h"
 #include "npbind_dialog.h"
 #include "param_viewer_dialog.h"
+#include "uds_tree.h"
 
 CMRC_DECLARE(res);
 
@@ -1711,91 +1712,9 @@ void PkgInfoDialog::populateActivities() {
     }
     m_uds = uds;
 
-    auto section = [&](const QString& label, size_t count) {
-        auto* item = new QTreeWidgetItem(m_uds_tree, {tr("%1 (%2)").arg(label).arg(count)});
-        QFont f = item->font(0);
-        f.setBold(true);
-        item->setFont(0, f);
-        item->setFirstColumnSpanned(true);
-        return item;
-    };
-    auto add = [](QTreeWidgetItem* parent, const QString& a, const QString& b) {
-        auto* item = new QTreeWidgetItem(parent, {a, b});
-        item->setToolTip(0, a);
-        item->setToolTip(1, b);
-        return item;
-    };
-
-    auto* events = section(tr("Events"), uds.events.size());
-    for (const auto& ev : uds.events) {
-        auto* item = add(events, S(ev.name),
-                         QStringList{S(ev.type), S(ev.group)}.join(QStringLiteral(", ")));
-        for (const auto& p : ev.properties) {
-            add(item, S(p.path), S(p.data_type));
-        }
-    }
-    auto* stats = section(tr("Stats"), uds.stats.size());
-    for (const auto& st : uds.stats) {
-        QStringList details{S(st.data_type), S(st.aggregation)};
-        if (!st.enum_source_id.empty()) {
-            details << tr("values from %1").arg(S(st.enum_source_id));
-        }
-        auto* item = add(stats, QStringLiteral("#%1 %2").arg(st.id).arg(S(st.name)),
-                         details.join(QStringLiteral(", ")));
-        item->setToolTip(0, tr("Group: %1, source: %2").arg(S(st.group), S(st.source_id)));
-    }
-    auto* rules = section(tr("Stat rules"), uds.rules.size());
-    for (const auto& r : uds.rules) {
-        QString when = tr("on %1").arg(S(r.event));
-        if (!r.condition.empty()) {
-            when += tr(" if %1").arg(S(r.condition));
-        }
-        add(rules, QStringLiteral("#%1 %2").arg(r.id).arg(when),
-            tr("%1 → stat #%2 %3")
-                .arg(S(r.input))
-                .arg(r.output_stat_id)
-                .arg(S(r.output_stat_name)));
-    }
-    auto* enums = section(tr("Enums"), uds.enums.size());
-    for (const auto& en : uds.enums) {
-        auto* item = add(enums, QStringLiteral("#%1 %2").arg(en.id).arg(S(en.source_id)),
-                         tr("%n value(s)", nullptr, static_cast<int>(en.values.size())));
-        for (const auto& v : en.values) {
-            add(item, S(v), QString());
-        }
-    }
-    events->setExpanded(true);
-    stats->setExpanded(true);
-
-    QStringList parts;
-    parts << tr("%n event(s)", nullptr, static_cast<int>(uds.events.size()))
-          << tr("%n stat(s)", nullptr, static_cast<int>(uds.stats.size()))
-          << tr("%n rule(s)", nullptr, static_cast<int>(uds.rules.size()))
-          << tr("%n enum(s)", nullptr, static_cast<int>(uds.enums.size()));
-    QStringList ids;
-    if (!uds.np_comm_id.empty()) {
-        ids << tr("NP ID %1").arg(S(uds.np_comm_id));
-    }
-    if (uds.configuration_id != 0) {
-        ids << tr("configuration %1").arg(uds.configuration_id);
-    }
-    QString text = QStringLiteral("<b>%1</b>").arg(parts.join(QStringLiteral(" · ")));
-    if (!ids.isEmpty()) {
-        text += QStringLiteral("<br>") + ids.join(QStringLiteral(" · ")).toHtmlEscaped();
-    }
-    if (!uds.problems.empty()) {
-        QStringList p;
-        for (const auto& s : uds.problems) {
-            p << S(s);
-        }
-        text += QStringLiteral("<br><span style=\"color:#d9534f\">%1</span>")
-                    .arg(p.join(QStringLiteral("; ")).toHtmlEscaped());
-    }
-    m_uds_summary->setText(text);
-    m_uds_text = parts.join(QStringLiteral(", "));
-    if (!ids.isEmpty()) {
-        m_uds_text += QStringLiteral(" (") + ids.join(QStringLiteral(", ")) + QLatin1Char(')');
-    }
+    UdsTree::Populate(m_uds_tree, uds);
+    m_uds_summary->setText(UdsTree::SummaryHtml(uds));
+    m_uds_text = UdsTree::SummaryText(uds);
 }
 
 // ---------------------------------------------------------------- Report
