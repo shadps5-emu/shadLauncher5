@@ -77,6 +77,10 @@ A Qt-based game launcher for a someday ps5 emulator. shadLauncher5 manages your 
 - **Browse ZArchive Contents** — inspect a `.zar` archive's contents without extracting it.
 - **Extract from ZArchive** — unpack a `.zar` archive back to a normal install directory.
 
+### PS5 system updates (PUP)
+
+- **PS5 PUP Viewer** — browse a decrypted system update (`PS5UPDATE.PUP.dec`) as a folder tree: its entries, the files in its SLB2 containers (`titania.bls` and the like) and in its exFAT system images (`ssd0.system_b`, `ssd0.system_ex_b`), and extract all of it or the files you pick. Nothing is decrypted; the modules stay as they are.
+
 ### Multi-version emulator management
 
 - Install and manage multiple emulator versions side by side.

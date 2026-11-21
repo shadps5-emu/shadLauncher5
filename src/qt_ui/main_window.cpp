@@ -35,6 +35,7 @@
 #include "pkg_info_dialog.h"
 #include "pkg_install_dialog.h"
 #include "progress_dialog.h"
+#include "pup_viewer_dialog.h"
 #include "qt_ui/check_update.h"
 #include "settings_dialog.h"
 #include "setup_wizard.h"
@@ -254,6 +255,21 @@ void MainWindow::createConnects() {
                 return;
             }
             auto* dialog = new PkgInfoDialog(path, this);
+            dialog->setAttribute(Qt::WA_DeleteOnClose);
+            dialog->show();
+        });
+
+        auto* pup_viewer = new QAction(tr("PS5 P&UP Viewer..."), this);
+        pup_viewer->setToolTip(tr("Browse a decrypted PS5 system update (PUP) and extract its "
+                                  "files, including those in its SLB2 containers and exFAT "
+                                  "system images."));
+        ui->menuUtilities->insertAction(ui->actionSetup_Wizard, pup_viewer);
+        connect(pup_viewer, &QAction::triggered, this, [this] {
+            const QString path = PupViewerDialog::PickPup(this);
+            if (path.isEmpty()) {
+                return;
+            }
+            auto* dialog = new PupViewerDialog(Common::FS::PathFromQString(path), this);
             dialog->setAttribute(Qt::WA_DeleteOnClose);
             dialog->show();
         });

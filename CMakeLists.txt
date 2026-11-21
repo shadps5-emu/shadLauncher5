@@ -195,6 +195,8 @@ set(FILEFORMAT src/core/file_format/param.cpp
                src/core/file_format/ps5_pkg_extract.h
                src/core/file_format/ps5_pkg_image.cpp
                src/core/file_format/ps5_pkg_image.h
+               src/core/file_format/ps5_pup.cpp
+               src/core/file_format/ps5_pup.h
                src/core/analysis/string_analysis.cpp
                src/core/analysis/string_analysis.h
                src/core/analysis/middleware.cpp
@@ -316,6 +318,8 @@ set(QT_UI src/qt_ui/settings.cpp
           src/qt_ui/pkg_info_dialog.h
           src/qt_ui/pkg_install_dialog.cpp
           src/qt_ui/pkg_install_dialog.h
+          src/qt_ui/pup_viewer_dialog.cpp
+          src/qt_ui/pup_viewer_dialog.h
           src/qt_ui/cheats_patches_dialog.cpp
           src/qt_ui/cheats_patches_dialog.h
           src/qt_ui/cheats_patches_dialog.ui
