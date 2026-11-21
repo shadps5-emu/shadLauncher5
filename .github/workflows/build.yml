@@ -62,6 +62,8 @@ jobs:
  
   windows-qt:
     runs-on: windows-2022
+    permissions:
+      contents: read
     needs: get-info
     steps:
       - uses: actions/checkout@v5
