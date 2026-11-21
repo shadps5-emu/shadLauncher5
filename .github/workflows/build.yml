@@ -128,13 +128,19 @@ jobs:
       - name: Configure CMake
         shell: pwsh
         run: |
+          $clang = Join-Path $env:VCINSTALLDIR "Tools\Llvm\x64\bin\clang-cl.exe"
+          if (-not (Test-Path $clang)) {
+            Write-Error "Visual Studio's clang-cl not found at $clang"
+            exit 1
+          }
+          & $clang --version
           cmake --fresh -G Ninja `
             -B "${{ github.workspace }}/build" `
             -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
             -DAPP_VERSION="${{ env.APP_VERSION }}" `
             -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON `
-            -DCMAKE_C_COMPILER=clang-cl `
-            -DCMAKE_CXX_COMPILER=clang-cl `
+            -DCMAKE_C_COMPILER="$clang" `
+            -DCMAKE_CXX_COMPILER="$clang" `
             -DCMAKE_C_COMPILER_LAUNCHER=ccache `
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache `
 
