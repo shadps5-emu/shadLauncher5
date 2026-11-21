@@ -61,7 +61,7 @@ jobs:
 
  
   windows-qt:
-    runs-on: windows-2025
+    runs-on: windows-2022
     needs: get-info
     steps:
       - uses: actions/checkout@v5
