@@ -4,6 +4,7 @@
 #include <array>
 #include <cctype>
 #include <cstddef>
+#include <optional>
 #include <utility>
 
 #include <fmt/format.h>
@@ -49,6 +50,19 @@ std::string TrimPadding(std::string s) {
         ++start;
     }
     return s.substr(start);
+}
+
+// The string at obj[key], or std::nullopt if it's missing or isn't a string. A wrong type in
+// someone's param.json must not throw out of Parse().
+std::optional<std::string> GetString(const nlohmann::json& obj, std::string_view key) {
+    if (!obj.is_object()) {
+        return std::nullopt;
+    }
+    const auto it = obj.find(key);
+    if (it == obj.end() || !it->is_string()) {
+        return std::nullopt;
+    }
+    return it->get<std::string>();
 }
 
 ParamValueType TypeOf(const nlohmann::json& node) {
@@ -277,29 +291,29 @@ bool Param::Parse(std::string_view json_text) {
 
     // --- Titles -----------------------------------------------------------
     if (const auto lp = j.find("localizedParameters"); lp != j.end() && lp->is_object()) {
-        default_language = lp->value("defaultLanguage", "en-US");
+        default_language = GetString(*lp, "defaultLanguage").value_or("en-US");
 
-        if (const auto it = lp->find(default_language);
-            it != lp->end() && it->is_object() && it->contains("titleName")) {
-            title = (*it)["titleName"].get<std::string>();
+        if (const auto it = lp->find(default_language); it != lp->end()) {
+            title = GetString(*it, "titleName").value_or("");
         }
         if (title.empty()) {
             // Fall back to the first localized entry we can find.
             for (const auto& [locale, value] : lp->items()) {
-                if (locale == "defaultLanguage" || !value.is_object()) {
+                if (locale == "defaultLanguage") {
                     continue;
                 }
-                if (value.contains("titleName")) {
-                    title = value["titleName"].get<std::string>();
+                if (auto name = GetString(value, "titleName")) {
+                    title = std::move(*name);
                     break;
                 }
             }
         }
 
         for (const auto& [index, locale] : lang_table) {
-            if (const auto it = lp->find(locale);
-                it != lp->end() && it->is_object() && it->contains("titleName")) {
-                localized_titles[index] = (*it)["titleName"].get<std::string>();
+            if (const auto it = lp->find(locale); it != lp->end()) {
+                if (auto name = GetString(*it, "titleName")) {
+                    localized_titles[index] = std::move(*name);
+                }
             }
         }
     }
