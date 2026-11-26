@@ -767,11 +767,11 @@ tr("First you need to choose a location to save the versions in\n'Path to save v
             QString platform;
 
 #ifdef Q_OS_WIN
-            platform = "win64-sdl";
+            platform = "-win64-";
 #elif defined(Q_OS_LINUX)
-            platform = "linux-sdl";
+            platform = "-linux-";
 #elif defined(Q_OS_MACOS)
-            platform = "macos-sdl";
+            platform = "-macos-";
 #endif
             if (versionName.contains("Pre-release", Qt::CaseInsensitive)) {
                 apiUrl = "https://api.github.com/repos/shadps5-emu/shadPS5/releases";
@@ -1451,11 +1451,11 @@ void VersionDialog::installPreReleaseByTag(const QString& tagName) {
         QString downloadUrl;
         QString platformStr;
 #ifdef Q_OS_WIN
-        platformStr = "win64-sdl";
+        platformStr = "-win64-";
 #elif defined(Q_OS_LINUX)
-        platformStr = "linux-sdl";
+        platformStr = "-linux-";
 #elif defined(Q_OS_MACOS)
-        platformStr = "macos-sdl";
+        platformStr = "-macos-";
 #endif
         for (const QJsonValue& av : assets) {
             QJsonObject aobj = av.toObject();
